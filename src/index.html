@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Serial Port Logger</title>
+  <link href="../static_file/css/bootstrap.min.css" rel="stylesheet">
+  <script type="text/javascript" src="../static_file/js/jquery.min.js"></script>
+  <script type="text/javascript" src="../static_file/js/bootstrap.min.js"></script>
+
+</head>
+<body>
+
+
+<div class="container">
+  <div class="row">
+    <div class="col-sm-12   col-xs-12  col-md-12  col-lg-12   " style="margin: 0px;padding: 0px;text-align: left">
+      <ul class="nav nav-tabs">
+        <li class="active"><a href="#panel-991181" data-toggle="tab" >实时消息</a></li>
+        <div class="tab-content"  style="margin-top: 40px">
+          <div class="tab-pane active"  >
+            <p>
+                <textarea  class="form-control" id="messageTextarea"  style="min-height: 200px" readonly></textarea>
+
+            </p>
+
+           </div>
+
+        </div>
+      </ul>
+
+      <div class="row">
+        <div class="col-sm-4">
+          <input type="checkbox"    class="btn btn-primary btn-lg" id="snrCheckBox" />
+          <label for="snrCheckBox">信号质量检测</label>
+          <input type="checkbox"   class="btn btn-primary btn-lg" id="locateCheckBox" />
+          <label for="locateCheckBox">定位信息捕获</label>
+        </div>
+        <div class="col-sm-4">
+          <input type="checkbox" checked  class="btn btn-primary btn-lg" id="clearOnSaved" />
+          <label for="clearOnSaved">保存后清空</label>
+          <button onclick="saveMsgLog()">Save Log</button>
+
+        </div>
+        <div class="col-sm-4" style="text-align: right">
+          <input type="checkbox" checked onclick="setMsgAutoScroll()"  class="btn btn-primary btn-lg" id="msgAutoScrollBox" />
+          <label for="msgAutoScrollBox">自动滚动</label>
+          <button onclick="clearMsgLog()">Clear Log</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-xs-6 "  style="margin: 0px; padding: 0px">
+<!--      <div class="form-group">-->
+<!--        <label for="firstname" class="col-sm-2 control-label">名字</label>-->
+<!--        <div class="col-sm-10">-->
+<!--          <input type="text" class="form-control" id="firstname" placeholder="请输入名字">-->
+<!--        </div>-->
+<!--      </div>-->
+      <table class="table">
+      <tr class="error">
+        <td>           <label for="serialPortSelect">Select Serial Port:</label>         </td>
+        <td>          <select  class="form-control" id="serialPortSelect"></select>   </td>
+
+      </tr>
+      <tr class="success">
+        <td>         <label for="baudRateInput">Baud Rate:</label>     </td>
+        <td>          <input type="number"  class="form-control" id="baudRateInput" value="9600" min="1">       </td>
+
+      </tr>
+        <tr class="error">
+          <td>       <label for="dataBitsInput">Data Bits:</label>    </td>
+          <td>       <input  class="form-control" type="number" id="dataBitsInput" value="8" min="1">      </td>
+
+        </tr>
+        <tr class="success">
+          <td>       <label for="parityInput">Parity:</label>       </td>
+          <td>          <select  class="form-control" id="parityInput">
+            <option value="none" selected>None</option>
+            <option value="even">Even</option>
+            <option value="odd">Odd</option>
+          </select>
+
+          </td>
+        </tr>
+      <tr class="error">
+        <td>           <label for="stopBitsInput">Stop Bits:</label>       </td>
+        <td>          <input  class="form-control" type="number" id="stopBitsInput" value="1" min="1">      </td>
+
+
+      </tr>
+
+
+      </tr>
+        <tr class="success">
+          <td>     <input type="checkbox"  checked class="btn btn-primary btn-lg" id="autoRetryCheckBox" /><label for="autoRetryCheckBox">自动重试</label>  </td>
+          <td>      <button class="btn btn-primary btn-lg" onclick=" ">刷新</button>
+              <button type="button" class="btn btn-primary btn-lg" onclick="openSerialConnection()" id="openSerialConnectionBtn">打开串口</button></td>
+
+        </tr>
+    </table>
+
+    </div>
+    <div class="col-xs-6 ">
+      <ul class="nav nav-tabs">
+        <li class="active"><a href="#panel-991181" data-toggle="tab"  >日志</a></li>
+      </ul>
+        <div class="tab-content">
+         <div class="tab-pane active" id="panel-2" >
+          <p> <textarea  class="form-control" id="logTextarea"  style="min-height: 200px" readonly></textarea>
+          </p>
+             <button class="btn btn-primary" onclick="clearLog()" >Clear Log</button>
+
+         </div>
+    </div>
+
+
+
+</div>
+      <!-- 模态框（Modal） -->
+      <div class="modal fade" id="toastModelBox" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+          <div class="modal-dialog">
+              <div class="modal-content">
+                  <div class="modal-header">
+                      <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                      <h4 class="modal-title" id="myModalLabel">提示</h4>
+                  </div>
+                  <div class="modal-body" id="toastModelBoxMsg"></div>
+                  <div class="modal-footer">
+                      <button type="button" class="btn btn-default" data-dismiss="modal" id="toastModelBoxCloseBtn">关闭</button>
+                  </div>
+              </div><!-- /.modal-content -->
+          </div><!-- /.modal -->
+      </div>
+
+
+  </div>
+</div>
+
+</body>
+
+
+
+<script src="js/log.js"></script>
+<script src="js/serial.js"></script>
+<script>
+    const { ipcRenderer } = require('electron');
+
+    $('#snrCheckBox').click(function (e){
+        if (document.getElementById('snrCheckBox').checked) {
+            ipcRenderer.send('toggle-snr-show');
+        } else {
+            ipcRenderer.send('toggle-snr-hide');
+        }
+    })
+    $('#locateCheckBox').click(function (e){
+        if (document.getElementById('locateCheckBox').checked) {
+            ipcRenderer.send('toggle-locate-show');
+        } else {
+            ipcRenderer.send('toggle-locate-hide');
+        }
+    })
+
+    // 监听主进程发送的消息
+    ipcRenderer.on('locate.close', (event, isChecked) => {
+        console.log('ipcRenderer locate.close')
+        // 更新 checkbox 的状态
+        document.getElementById('locateCheckBox').checked = false;
+    });
+    // 监听主进程发送的消息
+    ipcRenderer.on('snr.close', (event, isChecked) => {
+
+        console.log('snr.close')
+
+        // 更新 checkbox 的状态
+        document.getElementById('snrCheckBox').checked = false;
+    });
+
+
+
+    //每秒自动刷新串口列表
+    setInterval(() => {
+        listSerialPorts()
+    }, 1000);
+
+
+
+    function showToast(message, hideTime = 1000) {
+        $("#toastModelBoxMsg").html(message);
+        $("#toastModelBox").modal();
+        $("#toastModelBoxCloseBtn").focus();
+
+
+        // 显示 Toast 提示 3 秒后自动隐藏
+        setTimeout(() => {
+            $("#toastModelBox").modal('hide')
+
+        }, hideTime);
+    }
+</script>
+<script src="js/simulator.js"></script>
+<script>
+    startGpsServer();
+</script>
+</html>
+
+
+
